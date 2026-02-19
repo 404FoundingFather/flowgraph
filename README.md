@@ -112,12 +112,25 @@ See [spec.md](./spec.md) for the full FlowGraph specification, including:
 
 ## Integrating with Claude Code
 
-FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude Code](https://docs.anthropic.com/en/docs/claude-code), add a FlowGraph section to your project's `.claude/CLAUDE.md` file. Here's a ready-to-paste template:
+FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude Code](https://docs.anthropic.com/en/docs/claude-code):
+
+1. **Copy the spec into your project** so the agent can read it locally:
+   ```bash
+   # from your project root
+   cp node_modules/flowgraph/spec.md flowgraph/spec.md
+   # or if you haven't installed it:
+   curl -sL https://raw.githubusercontent.com/404FoundingFather/flowgraph/main/spec.md > flowgraph/spec.md
+   ```
+
+2. **Add a FlowGraph section** to your `.claude/CLAUDE.md` — here's a ready-to-paste template (replace the paths to match your project):
 
 ````markdown
-## FlowGraph Discipline
+## FlowGraph
 
-The FlowGraph (`your-project.flowgraph.json`) captures **high-value maintenance contracts** — things that prevent real bugs when code changes. It is not a comprehensive map of the codebase.
+This project uses [FlowGraph](https://github.com/404FoundingFather/flowgraph) for machine-verifiable maintenance contracts.
+
+- **`flowgraph/your-project.flowgraph.json`** — The contract: nodes, co_change edges, invariants, and flows. Read this first for structural understanding of how components connect.
+- **`flowgraph/spec.md`** — The FlowGraph specification (how to read and write flowgraph files). Reference this when creating or updating flowgraph entries.
 
 ### The three elements:
 
@@ -148,7 +161,7 @@ The FlowGraph (`your-project.flowgraph.json`) captures **high-value maintenance 
 - **Nodes not referenced** by any co_change edge, invariant, or complex flow.
 ````
 
-This gives the agent a clear workflow: check impact before changing, verify after changing, and update the flowgraph when verification fails. The "what does NOT belong" section prevents the agent from bloating the flowgraph with low-value entries.
+The template points the agent at two files: the flowgraph JSON (the contract itself) and the spec (how to read/write it). This gives it enough context to check impact before changing, verify after changing, update the flowgraph when verification fails, and know what does and doesn't belong.
 
 ### Other AI agents
 
