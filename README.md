@@ -110,17 +110,54 @@ See [spec.md](./spec.md) for the full FlowGraph specification, including:
 - Invariant structure
 - Extensibility with custom node kinds
 
-## Integrating with AI Agents
+## Integrating with Claude Code
 
-FlowGraph is designed to be read by AI coding agents (Claude, GPT, Copilot, etc.). Add this to your agent's system prompt or project instructions:
+FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude Code](https://docs.anthropic.com/en/docs/claude-code), add a FlowGraph section to your project's `.claude/CLAUDE.md` file. Here's a ready-to-paste template:
 
-```
-Before modifying code, run: npx flowgraph verify --impact <node:id>
-After modifying code, run: npx flowgraph verify
-If verification fails, update the flowgraph to match your changes.
-```
+````markdown
+## FlowGraph Discipline
 
-The agent gets a clear answer to "what else do I need to change?" without reading the entire codebase.
+The FlowGraph (`your-project.flowgraph.json`) captures **high-value maintenance contracts** — things that prevent real bugs when code changes. It is not a comprehensive map of the codebase.
+
+### The three elements:
+
+1. **co_change edges** (primary) — "if you change X, you must also update Y." Every table and key type should have co_change edges to the methods/endpoints that would break if the schema changed.
+2. **Invariants** — Cross-cutting rules that must hold regardless of what changes. Each has an `enforce` field explaining where/how it's enforced.
+3. **Complex flows** — Multi-file execution paths with non-trivial branching (3+ cases). Only flows where the branching logic spans multiple files and isn't obvious from reading one call site.
+
+### Before modifying code:
+
+- **Impact check** — Run `npx flowgraph verify --impact <node:id>` to see co_change requirements, containing flows, and scoped invariants.
+
+### After modifying code:
+
+1. **Verify** — Run `npx flowgraph verify` to check the flowgraph still matches source.
+2. **Update** — If verification fails:
+   - Changed a table schema? Update co_change target methods/endpoints.
+   - New table? Add `table:` node with loc, fk, indexes + co_change edges to its repository methods.
+   - New cross-cutting rule? Add an `invariants` entry with `enforce`.
+   - Changed a complex multi-file flow with branching? Update the relevant `flows` entry.
+3. **Re-verify** — Run `npx flowgraph verify` again to confirm 0 FAIL.
+
+### What does NOT belong:
+
+- **calls/reads/writes edges** — Visible by reading the call site. co_change captures what matters.
+- **Method pre/post conditions** — Restates what the method name and types already say.
+- **Endpoint request/response shapes** — Documentation, not contract.
+- **Simple linear flows** — If a flow is just "endpoint -> service -> repo -> done" with no branching, don't add it.
+- **Nodes not referenced** by any co_change edge, invariant, or complex flow.
+````
+
+This gives the agent a clear workflow: check impact before changing, verify after changing, and update the flowgraph when verification fails. The "what does NOT belong" section prevents the agent from bloating the flowgraph with low-value entries.
+
+### Other AI agents
+
+The same instructions work for any AI coding agent that reads project configuration. The key points to convey:
+
+1. Read the flowgraph JSON for structural understanding of the codebase
+2. Run `--impact` before modifying code to see what else needs to change
+3. Run `verify` after modifying code to confirm contracts still hold
+4. Keep the flowgraph lean — only high-value maintenance contracts
 
 ## Getting Started from Scratch
 
