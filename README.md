@@ -24,6 +24,14 @@ FlowGraph is designed for AI coding agents and human developers alike. It's not 
 - Anything the type checker already enforces
 - Simple linear flows with no branching
 
+## Install
+
+```bash
+npm install --save-dev flowgraph-ai
+```
+
+Or just use `npx` — no install needed.
+
 ## Quick Start
 
 ```bash
@@ -80,7 +88,7 @@ This single `co_change` edge says: if you add a column to the `tasks` table, you
 
 ## CLI Commands
 
-### `flowgraph verify [file]`
+### `flowgraph-ai verify [file]`
 
 Runs four verification phases against your source code:
 
@@ -93,7 +101,7 @@ Output: `PASS`, `FAIL`, or `WARN` for each check.
 
 If no file is specified, auto-discovers `*.flowgraph.json` in the current directory.
 
-### `flowgraph verify --impact <node:id>`
+### `flowgraph-ai verify --impact <node:id>`
 
 Shows everything affected by changing a node:
 - Outgoing/incoming edges (with `co_change` edges highlighted)
