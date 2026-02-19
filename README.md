@@ -28,13 +28,13 @@ FlowGraph is designed for AI coding agents and human developers alike. It's not 
 
 ```bash
 # Verify your flowgraph against source code
-npx flowgraph verify
+npx flowgraph-ai verify
 
 # See what breaks if you change a specific node
-npx flowgraph verify --impact table:users
+npx flowgraph-ai verify --impact table:users
 
 # Create a starter flowgraph for your project
-npx flowgraph init
+npx flowgraph-ai init
 ```
 
 ## Example
@@ -117,7 +117,7 @@ FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude C
 1. **Copy the spec into your project** so the agent can read it locally:
    ```bash
    # from your project root
-   cp node_modules/flowgraph/flowgraph-spec-v2.1.md flowgraph/
+   cp node_modules/flowgraph-ai/flowgraph-spec-v2.1.md flowgraph/
    # or if you haven't installed it:
    curl -sL https://raw.githubusercontent.com/404FoundingFather/flowgraph/main/flowgraph-spec-v2.1.md -o flowgraph/flowgraph-spec-v2.1.md
    ```
@@ -140,17 +140,17 @@ This project uses [FlowGraph](https://github.com/404FoundingFather/flowgraph) fo
 
 ### Before modifying code:
 
-- **Impact check** — Run `npx flowgraph verify --impact <node:id>` to see co_change requirements, containing flows, and scoped invariants.
+- **Impact check** — Run `npx flowgraph-ai verify --impact <node:id>` to see co_change requirements, containing flows, and scoped invariants.
 
 ### After modifying code:
 
-1. **Verify** — Run `npx flowgraph verify` to check the flowgraph still matches source.
+1. **Verify** — Run `npx flowgraph-ai verify` to check the flowgraph still matches source.
 2. **Update** — If verification fails:
    - Changed a table schema? Update co_change target methods/endpoints.
    - New table? Add `table:` node with loc, fk, indexes + co_change edges to its repository methods.
    - New cross-cutting rule? Add an `invariants` entry with `enforce`.
    - Changed a complex multi-file flow with branching? Update the relevant `flows` entry.
-3. **Re-verify** — Run `npx flowgraph verify` again to confirm 0 FAIL.
+3. **Re-verify** — Run `npx flowgraph-ai verify` again to confirm 0 FAIL.
 
 ### What does NOT belong:
 
@@ -174,7 +174,7 @@ The same instructions work for any AI coding agent that reads project configurat
 
 ## Getting Started from Scratch
 
-1. **Start small.** Run `npx flowgraph init` and replace the example with 5-10 `co_change` edges from your project. Focus on database table -> repository method pairs and enum -> switch statement pairs.
+1. **Start small.** Run `npx flowgraph-ai init` and replace the example with 5-10 `co_change` edges from your project. Focus on database table -> repository method pairs and enum -> switch statement pairs.
 
 2. **Add invariants.** Write down 2-3 cross-cutting rules that a new contributor would violate without being told.
 

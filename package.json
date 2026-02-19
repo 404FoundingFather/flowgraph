@@ -1,10 +1,10 @@
 {
-  "name": "flowgraph",
+  "name": "flowgraph-ai",
   "version": "0.1.0",
   "description": "Machine-verifiable maintenance contracts for codebases. Capture what breaks when code changes.",
   "type": "module",
   "bin": {
-    "flowgraph": "./bin/flowgraph.mjs"
+    "flowgraph-ai": "./bin/flowgraph.mjs"
   },
   "files": [
     "bin/",
