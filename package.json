@@ -1,0 +1,33 @@
+{
+  "name": "flowgraph",
+  "version": "0.1.0",
+  "description": "Machine-verifiable maintenance contracts for codebases. Capture what breaks when code changes.",
+  "type": "module",
+  "bin": {
+    "flowgraph": "./bin/flowgraph.mjs"
+  },
+  "files": [
+    "bin/",
+    "spec.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "flowgraph",
+    "verification",
+    "maintenance",
+    "contracts",
+    "architecture",
+    "co-change",
+    "impact-analysis",
+    "ai-agents"
+  ],
+  "author": "404FoundingFather",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/404FoundingFather/flowgraph.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$flowgraph": "2.1",
+  "meta": {
+    "name": "todo-api",
+    "root": "src/",
+    "description": "Simple task management API — demonstrates FlowGraph co_change edges, validates edges, and invariants."
+  },
+
+  "nodes": {
+    "type:TaskStatus": {
+      "kind": "type",
+      "loc": "types.ts:5",
+      "values": ["pending", "in_progress", "done", "cancelled"]
+    },
+    "type:CreateTask": {
+      "kind": "type",
+      "loc": "types.ts:9",
+      "schema": "CreateTaskSchema"
+    },
+
+    "table:tasks": {
+      "kind": "table",
+      "loc": "../schema.sql:1",
+      "indexes": ["idx_tasks_status(status)", "idx_tasks_assignee(assignee)"]
+    },
+
+    "method:TaskRepository.create": { "kind": "method", "loc": "repository.ts:11" },
+    "method:TaskRepository.updateStatus": { "kind": "method", "loc": "repository.ts:21" },
+
+    "endpoint:POST /tasks": { "kind": "endpoint", "loc": "routes.ts:5" },
+    "endpoint:PATCH /tasks/:id/status": { "kind": "endpoint", "loc": "routes.ts:23" }
+  },
+
+  "edges": [
+    { "from": "endpoint:POST /tasks", "to": "type:CreateTask", "rel": "validates", "note": "Zod parse on request body" },
+
+    { "from": "table:tasks", "to": "method:TaskRepository.create", "rel": "co_change", "note": "column changes require INSERT query update" },
+    { "from": "table:tasks", "to": "method:TaskRepository.updateStatus", "rel": "co_change", "note": "column changes require UPDATE query update" },
+    { "from": "type:TaskStatus", "to": "method:TaskRepository.updateStatus", "rel": "co_change", "note": "new status value requires handling in update logic" },
+    { "from": "type:TaskStatus", "to": "endpoint:PATCH /tasks/:id/status", "rel": "co_change", "note": "new status values need validation at API boundary" }
+  ],
+
+  "flows": {},
+
+  "invariants": [
+    {
+      "id": "INV-001",
+      "rule": "All user input from POST/PUT/PATCH endpoints must be validated with a Zod schema before use",
+      "scope": ["endpoint:POST /tasks"],
+      "enforce": "Route handler calls CreateTaskSchema.parse(req.body) before passing to repository"
+    }
+  ]
+}
