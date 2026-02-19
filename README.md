@@ -103,7 +103,7 @@ Creates a starter `<project-name>.flowgraph.json` in the current directory.
 
 ## Specification
 
-See [spec.md](./spec.md) for the full FlowGraph specification, including:
+See [flowgraph-spec-v2.1.md](./flowgraph-spec-v2.1.md) for the full FlowGraph specification, including:
 - All node kinds and their fields
 - Edge types and when to use each
 - Flow syntax and branching
@@ -117,9 +117,9 @@ FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude C
 1. **Copy the spec into your project** so the agent can read it locally:
    ```bash
    # from your project root
-   cp node_modules/flowgraph/spec.md flowgraph/spec.md
+   cp node_modules/flowgraph/flowgraph-spec-v2.1.md flowgraph/
    # or if you haven't installed it:
-   curl -sL https://raw.githubusercontent.com/404FoundingFather/flowgraph/main/spec.md > flowgraph/spec.md
+   curl -sL https://raw.githubusercontent.com/404FoundingFather/flowgraph/main/flowgraph-spec-v2.1.md -o flowgraph/flowgraph-spec-v2.1.md
    ```
 
 2. **Add a FlowGraph section** to your `.claude/CLAUDE.md` — here's a ready-to-paste template (replace the paths to match your project):
@@ -130,7 +130,7 @@ FlowGraph is designed to be read by AI coding agents. To hook it up to [Claude C
 This project uses [FlowGraph](https://github.com/404FoundingFather/flowgraph) for machine-verifiable maintenance contracts.
 
 - **`flowgraph/your-project.flowgraph.json`** — The contract: nodes, co_change edges, invariants, and flows. Read this first for structural understanding of how components connect.
-- **`flowgraph/spec.md`** — The FlowGraph specification (how to read and write flowgraph files). Reference this when creating or updating flowgraph entries.
+- **`flowgraph/flowgraph-spec-v2.1.md`** — The FlowGraph specification (how to read and write flowgraph files). Reference this when creating or updating flowgraph entries.
 
 ### The three elements:
 
@@ -182,7 +182,7 @@ The same instructions work for any AI coding agent that reads project configurat
 
 4. **Only add flows** for complex multi-file paths with 3+ branching cases. Most projects have 2-5 of these.
 
-See the [Getting Started section of the spec](./spec.md#getting-started) for detailed guidance.
+See the [Getting Started section of the spec](./flowgraph-spec-v2.1.md#getting-started) for detailed guidance.
 
 ## Philosophy
 
