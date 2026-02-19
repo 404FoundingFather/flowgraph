@@ -33,6 +33,9 @@ npx flowgraph-ai verify
 # See what breaks if you change a specific node
 npx flowgraph-ai verify --impact table:users
 
+# Render as Mermaid diagrams (outputs markdown)
+npx flowgraph-ai render
+
 # Create a starter flowgraph for your project
 npx flowgraph-ai init
 ```
@@ -97,7 +100,16 @@ Shows everything affected by changing a node:
 - Flows containing the node
 - Invariants scoping the node
 
-### `flowgraph init`
+### `flowgraph-ai render [file]`
+
+Generates a markdown file with Mermaid diagrams:
+- **Dependency graph** — nodes grouped by kind, edges styled by type (dashed for co_change, solid for others)
+- **Flow diagrams** — one per flow, with decision diamonds for branching and terminal nodes for DONE/FAIL
+- **Invariants table** — all invariants with their enforcement notes
+
+Output is written next to the input file (e.g., `my-project.flowgraph.json` -> `my-project.flowgraph.md`). View it on GitHub (native Mermaid support), in VS Code with a Mermaid extension, or paste diagrams into [mermaid.live](https://mermaid.live).
+
+### `flowgraph-ai init`
 
 Creates a starter `<project-name>.flowgraph.json` in the current directory.
 

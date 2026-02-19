@@ -5,6 +5,7 @@
  * Usage:
  *   flowgraph verify [path/to/file.flowgraph.json]
  *   flowgraph verify --impact <node:id> [path/to/file.flowgraph.json]
+ *   flowgraph render [path/to/file.flowgraph.json]
  *   flowgraph init
  */
 
@@ -58,6 +59,17 @@ if (command === "verify") {
   } else {
     runVerification(flowgraph, projectRoot, flowgraphPath);
   }
+} else if (command === "render") {
+  const explicitFile = args[1];
+  const flowgraphPath = resolveFlowgraphPath(explicitFile);
+
+  if (!flowgraphPath) {
+    console.error("No flowgraph file found. Pass a path or run `flowgraph-ai init` to create one.");
+    process.exit(1);
+  }
+
+  const flowgraph = JSON.parse(readFileSync(flowgraphPath, "utf-8"));
+  runRender(flowgraph, flowgraphPath);
 } else {
   console.error(`Unknown command: ${command}`);
   printUsage();
@@ -71,9 +83,10 @@ function printUsage() {
 FlowGraph — machine-verifiable maintenance contracts
 
 Usage:
-  flowgraph verify [file.flowgraph.json]           Verify contracts against source
-  flowgraph verify --impact <node:id> [file]        Show impact of changing a node
-  flowgraph init                                     Create a starter flowgraph
+  flowgraph-ai verify [file.flowgraph.json]          Verify contracts against source
+  flowgraph-ai verify --impact <node:id> [file]       Show impact of changing a node
+  flowgraph-ai render [file.flowgraph.json]           Render as Mermaid diagrams (markdown)
+  flowgraph-ai init                                    Create a starter flowgraph
 
 Options:
   --help, -h    Show this help message
@@ -780,4 +793,199 @@ function runVerification(flowgraph, projectRoot, flowgraphPath) {
   console.log(`${"=".repeat(64)}\n`);
 
   if (fail > 0) process.exit(1);
+}
+
+// ─── Mermaid Rendering ──────────────────────────────────────────────────────
+
+function sanitizeMermaidId(id) {
+  return id.replace(/[:./ \-]/g, "_");
+}
+
+function shortLabel(id) {
+  return id.replace(/^[^:]+:/, "");
+}
+
+function renderDependencyGraph(fg) {
+  const lines = ["graph LR"];
+
+  // Group nodes by kind
+  const groups = {};
+  for (const [id, node] of Object.entries(fg.nodes)) {
+    const kind = node.kind;
+    if (!groups[kind]) groups[kind] = [];
+    groups[kind].push(id);
+  }
+
+  const kindLabels = {
+    type: "Types",
+    table: "Tables",
+    method: "Methods",
+    endpoint: "Endpoints",
+    event: "Events",
+  };
+
+  // Subgraphs
+  for (const [kind, ids] of Object.entries(groups)) {
+    lines.push(`  subgraph ${kindLabels[kind] || kind}`);
+    for (const id of ids) {
+      lines.push(`    ${sanitizeMermaidId(id)}["${shortLabel(id)}"]`);
+    }
+    lines.push("  end");
+  }
+
+  // Styles
+  lines.push("");
+  lines.push("  classDef type fill:#dae8fc,stroke:#6c8ebf,color:#333");
+  lines.push("  classDef table fill:#d5e8d4,stroke:#82b366,color:#333");
+  lines.push("  classDef method fill:#ffe6cc,stroke:#d6b656,color:#333");
+  lines.push("  classDef endpoint fill:#e1d5e7,stroke:#9673a6,color:#333");
+  lines.push("  classDef event fill:#fff2cc,stroke:#d6b656,color:#333");
+
+  for (const [kind, ids] of Object.entries(groups)) {
+    for (const id of ids) {
+      lines.push(`  class ${sanitizeMermaidId(id)} ${kind}`);
+    }
+  }
+
+  // Edges
+  lines.push("");
+  for (const edge of fg.edges) {
+    if (edge._comment) continue;
+    const from = sanitizeMermaidId(edge.from);
+    const to = sanitizeMermaidId(edge.to);
+    if (edge.rel === "co_change") {
+      lines.push(`  ${from} -.->|co_change| ${to}`);
+    } else {
+      lines.push(`  ${from} -->|${edge.rel}| ${to}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function renderFlow(name, flow, allSteps) {
+  const lines = ["flowchart TD"];
+
+  lines.push("  classDef decision fill:#fff2cc,stroke:#d6b656,color:#333");
+  lines.push("  classDef terminal fill:#f8cecc,stroke:#b85450,color:#333");
+  lines.push("  classDef success fill:#d5e8d4,stroke:#82b366,color:#333");
+  lines.push("");
+
+  const steps = flow.steps;
+  const stepNodes = new Set(steps.map((s) => s.node));
+
+  // Collect external node references
+  const externalRefs = new Set();
+  for (const step of steps) {
+    if (typeof step.then === "object") {
+      for (const target of Object.values(step.then)) {
+        if (target !== "DONE" && target !== "FAIL" && target !== "next" && !stepNodes.has(target)) {
+          externalRefs.add(target);
+        }
+      }
+    }
+  }
+
+  // Trigger
+  lines.push(`  trigger(["${flow.trigger}"])`);
+
+  // Declare step nodes
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const label = shortLabel(step.node);
+    const sid = `s${i}`;
+
+    if (typeof step.then === "object") {
+      lines.push(`  ${sid}{"${label}"}`);
+      lines.push(`  class ${sid} decision`);
+    } else {
+      lines.push(`  ${sid}["${label}"]`);
+    }
+  }
+
+  // External reference nodes
+  for (const ref of externalRefs) {
+    const sid = sanitizeMermaidId(ref);
+    lines.push(`  ${sid}["${shortLabel(ref)}"]:::external`);
+  }
+  if (externalRefs.size > 0) {
+    lines.push("  classDef external fill:#f5f5f5,stroke:#999,stroke-dasharray:5 5,color:#666");
+  }
+
+  // Terminals
+  lines.push("  done([DONE])");
+  lines.push("  class done success");
+  lines.push("  fail([FAIL])");
+  lines.push("  class fail terminal");
+  lines.push("");
+
+  // Trigger -> first step
+  lines.push("  trigger --> s0");
+
+  // Step edges
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const sid = `s${i}`;
+
+    if (step.then === "next") {
+      const next = i + 1 < steps.length ? `s${i + 1}` : "done";
+      lines.push(`  ${sid} --> ${next}`);
+    } else if (typeof step.then === "object") {
+      for (const [label, target] of Object.entries(step.then)) {
+        let targetSid;
+        if (target === "DONE") {
+          targetSid = "done";
+        } else if (target === "FAIL") {
+          targetSid = "fail";
+        } else if (target === "next") {
+          targetSid = i + 1 < steps.length ? `s${i + 1}` : "done";
+        } else {
+          const idx = steps.findIndex((s) => s.node === target);
+          targetSid = idx >= 0 ? `s${idx}` : sanitizeMermaidId(target);
+        }
+        lines.push(`  ${sid} -->|${label}| ${targetSid}`);
+      }
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function runRender(flowgraph, flowgraphPath) {
+  const out = [];
+  out.push(`# ${flowgraph.meta.name} FlowGraph`, "");
+  if (flowgraph.meta.description) {
+    out.push(`> ${flowgraph.meta.description}`, "");
+  }
+
+  out.push("## Dependency Graph", "");
+  out.push("```mermaid");
+  out.push(renderDependencyGraph(flowgraph));
+  out.push("```", "");
+
+  if (flowgraph.flows && Object.keys(flowgraph.flows).length > 0) {
+    for (const [name, flow] of Object.entries(flowgraph.flows)) {
+      out.push(`## Flow: ${name}`, "");
+      out.push(`> ${flow.trigger}`, "");
+      out.push("```mermaid");
+      out.push(renderFlow(name, flow));
+      out.push("```", "");
+    }
+  }
+
+  if (flowgraph.invariants && flowgraph.invariants.length > 0) {
+    out.push("## Invariants", "");
+    out.push("| ID | Rule | Enforcement |");
+    out.push("|---|---|---|");
+    for (const inv of flowgraph.invariants) {
+      const rule = inv.rule.replace(/\|/g, "\\|");
+      const enforce = (inv.enforce || "").replace(/\|/g, "\\|");
+      out.push(`| ${inv.id} | ${rule} | ${enforce} |`);
+    }
+    out.push("");
+  }
+
+  const outputPath = flowgraphPath.replace(/\.json$/, ".md");
+  writeFileSync(outputPath, out.join("\n"));
+  console.log(`Rendered: ${outputPath}`);
 }
